@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pantheon Installer</title>
+<script src="https://js.puter.com/v2/"></script>
+<style>
+body{background:#0a0a0f;color:#e0e0e0;font-family:monospace;padding:20px;}
+h2{color:#c084fc;}
+.ok{color:#22c55e;}
+.err{color:#ef4444;}
+.log{margin:4px 0;font-size:13px;}
+button{background:#7c3aed;color:white;border:none;padding:12px 24px;border-radius:6px;font-size:15px;cursor:pointer;margin-top:16px;display:block;width:100%;}
+</style>
+</head>
+<body>
+<h2>🔱 Pantheon Installer</h2>
+<p style="color:#6b7280;font-size:12px;margin-bottom:16px;">Tap the button — files will be written directly to your Puter account.</p>
+<div id="log"></div>
+<button onclick="install()">⚡ INSTALL PANTHEON FILES</button>
+
+<script>
+function log(msg, ok) {
+  var d = document.createElement("div");
+  d.className = "log";
+  d.innerHTML = '<span class="' + (ok !== false ? "ok" : "err") + '">' + msg + "</span>";
+  document.getElementById("log").appendChild(d);
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+async function install() {
+  document.querySelector("button").disabled = true;
+  log("Starting Pantheon installation...");
+
+  // Write pantheon-server.js
+  try {
+    var r1 = await fetch("https://raw.githubusercontent.com/kevinleestites2-dev/odysseus/main/pantheon-server.js");
+    var js = await r1.text();
+    await puter.fs.write("pantheon-server.js", js, {overwrite: true});
+    log("✅ pantheon-server.js written to Puter!");
+  } catch(e) {
+    log("❌ Server write failed: " + e.message, false);
+  }
+
+  // Write odysseus.html
+  try {
+    var r2 = await fetch("https://raw.githubusercontent.com/kevinleestites2-dev/odysseus/main/index.html");
+    var html = await r2.text();
+    await puter.fs.write("odysseus.html", html, {overwrite: true});
+    log("✅ odysseus.html written to Puter!");
+  } catch(e) {
+    log("❌ Odysseus write failed: " + e.message, false);
+  }
+
+  log("🔱 DONE! Open Puter Files. Right-click pantheon-server.js → Publish as Worker → name it pantheon-server → Publish.");
+  document.querySelector("button").textContent = "✅ INSTALLED";
+}
+</script>
+</body>
+</html>
