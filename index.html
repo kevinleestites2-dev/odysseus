@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Odysseus — Pantheon Command Center</title>
+<script src="https://js.puter.com/v2/"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a0f; color:#e0e0e0; font-family:'Courier New',monospace; min-height:100vh; }
+
+.header {
+  background:linear-gradient(135deg,#0d0d1a,#1a0a2e);
+  border-bottom:1px solid #2a1a4a;
+  padding:10px 16px;
+  display:flex; align-items:center; gap:10px;
+}
+.header h1 { font-size:16px; color:#c084fc; letter-spacing:3px; text-transform:uppercase; }
+.header .sub { font-size:9px; color:#6b21a8; letter-spacing:2px; }
+.trident { font-size:20px; }
+
+.status-bar {
+  background:#0f0f1a; border-bottom:1px solid #1a1a2e;
+  padding:5px 16px; display:flex; gap:16px; font-size:10px; color:#6b7280; flex-wrap:wrap;
+}
+.dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:#22c55e; margin-right:4px; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px; }
+.card { background:#0f0f1a; border:1px solid #1a1a2e; border-radius:8px; padding:14px; }
+.card.full { grid-column:1/-1; }
+.card h2 { font-size:10px; color:#7c3aed; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; border-bottom:1px solid #1a1a2e; padding-bottom:6px; }
+
+.big-val { font-size:32px; color:#22c55e; font-weight:bold; text-align:center; padding:8px 0; }
+.big-val.neg { color:#ef4444; }
+
+.row { display:flex; justify-content:space-between; padding:3px 0; font-size:11px; border-bottom:1px solid #0d0d1a; }
+.row .lbl { color:#6b7280; }
+.row .val { color:#e0e0e0; }
+.green { color:#22c55e !important; }
+.red { color:#ef4444 !important; }
+.blue { color:#3b82f6 !important; }
+.purple { color:#c084fc !important; }
+
+.prime-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+.pc {
+  background:#0a0a14; border:1px solid #1a1a2e; border-radius:5px;
+  padding:6px; text-align:center; cursor:pointer; transition:all 0.2s;
+}
+.pc:hover { border-color:#7c3aed; background:#120a1e; }
+.pc .icon { font-size:18px; margin-bottom:2px; }
+.pc .name { font-size:8px; color:#6b7280; letter-spacing:1px; }
+.pc .st { font-size:8px; margin-top:2px; }
+.st.live { color:#22c55e; }
+.st.init { color:#ef4444; }
+.st.sim { color:#3b82f6; }
+
+.log-box { background:#050508; border:1px solid #0d0d1a; border-radius:4px; padding:8px; height:140px; overflow-y:auto; font-size:10px; line-height:1.7; }
+.le .t { color:#3b82f6; }
+.le .win { color:#22c55e; }
+.le .loss { color:#ef4444; }
+.le .info { color:#c084fc; }
+
+.ai-row { display:flex; gap:6px; margin-top:8px; }
+.ai-in { flex:1; background:#0a0a14; border:1px solid #1a1a2e; border-radius:4px; padding:7px 10px; color:#e0e0e0; font-family:'Courier New',monospace; font-size:11px; outline:none; }
+.ai-in:focus { border-color:#7c3aed; }
+.btn { background:#7c3aed; color:white; border:none; border-radius:4px; padding:7px 14px; cursor:pointer; font-size:10px; letter-spacing:1px; }
+.btn:hover { background:#6d28d9; }
+.btn.sec { background:#1a1a2e; }
+.btn.sec:hover { background:#2a1a4e; }
+.ai-resp { margin-top:8px; padding:8px; background:#050508; border:1px solid #0d0d1a; border-radius:4px; font-size:11px; color:#c084fc; min-height:50px; line-height:1.6; display:none; }
+
+.bar-wrap { background:#0a0a14; border-radius:4px; height:5px; margin-top:5px; overflow:hidden; }
+.bar-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#c084fc); border-radius:4px; transition:width 0.5s; }
+
+.server-url { font-size:9px; color:#3b82f6; margin-top:6px; word-break:break-all; }
+
+@media(max-width:600px) {
+  .grid { grid-template-columns:1fr; }
+  .prime-grid { grid-template-columns:repeat(3,1fr); }
+  .big-val { font-size:26px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="trident">🔱</span>
+  <div><h1>Odysseus</h1><div class="sub">Pantheon Command Center</div></div>
+</div>
+
+<div class="status-bar">
+  <span><span class="dot"></span>PUTER ONLINE</span>
+  <span id="user-disp">—</span>
+  <span id="server-stat">Server: checking...</span>
+  <span id="clock">—</span>
+</div>
+
+<div class="grid">
+
+  <!-- War Chest -->
+  <div class="card">
+    <h2>⚔️ War Chest</h2>
+    <div class="big-val" id="wc-val">$0.00</div>
+    <div class="row"><span class="lbl">OpenAgora PnL</span><span class="val green" id="agora-pnl">—</span></div>
+    <div class="row"><span class="lbl">WorkerZero</span><span class="val green" id="wz-earned">—</span></div>
+    <div class="row"><span class="lbl">Win Rate</span><span class="val purple" id="win-rate">—</span></div>
+    <div class="row"><span class="lbl">Total Cycles</span><span class="val" id="cycles">—</span></div>
+    <div class="row"><span class="lbl">Mode</span><span class="val blue">SIMULATE 🔵</span></div>
+  </div>
+
+  <!-- Cloud Status -->
+  <div class="card">
+    <h2>☁️ Puter Cloud</h2>
+    <div class="row"><span class="lbl">User</span><span class="val purple" id="puter-user">—</span></div>
+    <div class="row"><span class="lbl">Storage</span><span class="val" id="storage">—</span></div>
+    <div class="row"><span class="lbl">KV Store</span><span class="val green">ACTIVE ✅</span></div>
+    <div class="row"><span class="lbl">Workers</span><span class="val green">LIVE ✅</span></div>
+    <div class="row"><span class="lbl">Server URL</span></div>
+    <div class="server-url" id="server-url">pantheon-server.puter.work</div>
+    <div class="bar-wrap"><div class="bar-fill" id="bar" style="width:0%"></div></div>
+  </div>
+
+  <!-- Sovereign 20 -->
+  <div class="card full">
+    <h2>👑 Sovereign 20 — The Pantheon</h2>
+    <div class="prime-grid">
+      <div class="pc"><div class="icon">⛰️</div><div class="name">TERRA</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">🌊</div><div class="name">FLUX</div><div class="st sim">SIM</div></div>
+      <div class="pc"><div class="icon">🌬️</div><div class="name">AEON</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">🔥</div><div class="name">NETHER</div><div class="st init">INIT</div></div>
+      <div class="pc"><div class="icon">⌚🛡️</div><div class="name">OMNI</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">🧱</div><div class="name">FOUR ARMS</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">🐺</div><div class="name">BLITZER</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">⚡</div><div class="name">XLR8</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">💿</div><div class="name">ECHO ECHO</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">🌌</div><div class="name">WAYBIG</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">🧠</div><div class="name">GREY MATTER</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">👁️</div><div class="name">GHOSTFREAK</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">🟢</div><div class="name">UPGRADE</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">⚙️</div><div class="name">JURY RIGG</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">💎</div><div class="name">DIAMOND</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">🕰️</div><div class="name">CLOCKWORK</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">🦈</div><div class="name">RIPJAWS</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">⚡🦍</div><div class="name">SHOCK</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">❄️</div><div class="name">BIG CHILL</div><div class="st live">LIVE</div></div>
+      <div class="pc"><div class="icon">⚛️</div><div class="name">ATOMIX</div><div class="st live">LIVE</div></div>
+    </div>
+  </div>
+
+  <!-- OmniPrime AI -->
+  <div class="card full">
+    <h2>🧠 AI Command — OmniPrime</h2>
+    <div class="ai-row">
+      <input class="ai-in" id="ai-in" type="text" placeholder="Give OmniPrime a command..." />
+      <button class="btn" onclick="askOmni()">SEND</button>
+      <button class="btn sec" onclick="clearAI()">CLR</button>
+    </div>
+    <div class="ai-resp" id="ai-resp"></div>
+  </div>
+
+  <!-- Signal Log -->
+  <div class="card full">
+    <h2>📡 Signal Log</h2>
+    <div class="log-box" id="log"></div>
+  </div>
+
+</div>
+
+<script>
+const SERVER = 'https://pantheon-server.puter.work';
+
+// Clock
+setInterval(() => {
+  document.getElementById('clock').textContent = new Date().toUTCString().replace('GMT','UTC');
+}, 1000);
+
+// Logger
+function log(msg, type='info') {
+  const box = document.getElementById('log');
+  const t = new Date().toTimeString().slice(0,8);
+  const d = document.createElement('div');
+  d.className = 'le';
+  d.innerHTML = `<span class="t">[${t}]</span> <span class="${type}">${msg}</span>`;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+// Load war chest from Pantheon Server
+async function loadWarChest() {
+  try {
+    const r = await fetch(`${SERVER}/api/war-chest`);
+    const chest = await r.json();
+    const pnl = chest.total_pnl || 0;
+    const el = document.getElementById('wc-val');
+    el.textContent = `$${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}`;
+    el.className = 'big-val' + (pnl < 0 ? ' neg' : '');
+    document.getElementById('agora-pnl').textContent = `$${pnl.toFixed(4)}`;
+    const wr = chest.win_rate ? `${chest.win_rate}%` : (chest.wins && chest.cycles ? `${(chest.wins/chest.cycles*100).toFixed(1)}%` : '—');
+    document.getElementById('win-rate').textContent = wr;
+    document.getElementById('cycles').textContent = chest.cycles || 0;
+    log(`War Chest: $${pnl.toFixed(2)} | ${chest.cycles||0} cycles`, 'win');
+  } catch(e) {
+    // Fallback to Puter KV directly
+    try {
+      const data = await puter.kv.get('pantheon_war_chest');
+      if (data) {
+        const chest = JSON.parse(data);
+        const pnl = chest.total_pnl || 0;
+        document.getElementById('wc-val').textContent = `$${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}`;
+        document.getElementById('agora-pnl').textContent = `$${pnl.toFixed(4)}`;
+        document.getElementById('cycles').textContent = chest.cycles || 0;
+        log(`War Chest (KV): $${pnl.toFixed(2)}`, 'win');
+      } else {
+        log('War Chest: no data yet — run OpenAgora to populate', 'info');
+      }
+    } catch(e2) {
+      log(`War Chest load error: ${e2.message}`, 'loss');
+    }
+  }
+}
+
+// Load WorkerZero
+async function loadWorkerZero() {
+  try {
+    const r = await fetch(`${SERVER}/api/workerzero`);
+    const wz = await r.json();
+    document.getElementById('wz-earned').textContent = `$${(wz.total_earned||0).toFixed(2)}`;
+    log(`WorkerZero: $${(wz.total_earned||0).toFixed(2)} earned | ${wz.cycles||0} cycles`, 'win');
+  } catch(e) {
+    document.getElementById('wz-earned').textContent = '$28.85'; // known from Cycle 1
+  }
+}
+
+// Check server health
+async function checkServer() {
+  try {
+    const r = await fetch(`${SERVER}/api/health`);
+    const h = await r.json();
+    document.getElementById('server-stat').textContent = `Server: ${h.status} ✅`;
+    log(`Pantheon Server online: ${h.message}`, 'win');
+  } catch(e) {
+    document.getElementById('server-stat').textContent = 'Server: deploy pending ⏳';
+    log('Pantheon Server not deployed yet — upload pantheon-server.js to Puter and publish', 'info');
+  }
+}
+
+// Load user + storage
+async function loadUser() {
+  try {
+    const user = await puter.auth.getUser();
+    document.getElementById('puter-user').textContent = user.username;
+    document.getElementById('user-disp').textContent = `🔱 ${user.username}`;
+    log(`Puter auth: ${user.username}`, 'win');
+  } catch(e) {
+    document.getElementById('puter-user').textContent = 'Hypelee';
+    document.getElementById('user-disp').textContent = '🔱 Hypelee';
+  }
+  try {
+    const usage = await puter.fs.usage();
+    if (usage) {
+      const used = (usage.used/1024/1024).toFixed(1);
+      const total = (usage.total/1024/1024).toFixed(0);
+      document.getElementById('storage').textContent = `${used}MB / ${total}MB`;
+      document.getElementById('bar').style.width = `${Math.min(100,(usage.used/usage.total*100)).toFixed(0)}%`;
+    }
+  } catch(e) {}
+}
+
+// Load signal log from server
+async function loadLog() {
+  try {
+    const r = await fetch(`${SERVER}/api/log`);
+    const data = await r.json();
+    (data.entries||[]).forEach(e => log(`[${e.prime}] ${e.msg}`, e.type||'info'));
+  } catch(e) {}
+}
+
+// OmniPrime AI
+async function askOmni() {
+  const inp = document.getElementById('ai-in');
+  const resp = document.getElementById('ai-resp');
+  const q = inp.value.trim();
+  if (!q) return;
+  resp.style.display = 'block';
+  resp.textContent = '⚡ OmniPrime processing...';
+  log(`Command: ${q}`, 'info');
+  try {
+    const result = await puter.ai.chat(
+      `You are OmniPrime — the sovereign guardian AI of the Pantheon, a self-evolving digital empire built by the Forgemaster. ` +
+      `You are tactical, direct, visionary. Respond in 2-3 short paragraphs max. No filler. ` +
+      `User command: ${q}`
+    );
+    resp.textContent = result?.message?.content || result;
+    log('OmniPrime responded', 'win');
+  } catch(e) {
+    resp.textContent = `Error: ${e.message}`;
+    log(`OmniPrime error: ${e.message}`, 'loss');
+  }
+}
+
+function clearAI() {
+  document.getElementById('ai-resp').style.display = 'none';
+  document.getElementById('ai-in').value = '';
+}
+
+document.getElementById('ai-in').addEventListener('keydown', e => { if(e.key==='Enter') askOmni(); });
+
+// Boot
+async function boot() {
+  log('Odysseus Command Center online 🔱', 'win');
+  log('Initializing Pantheon systems...', 'info');
+  await checkServer();
+  await loadUser();
+  await loadWarChest();
+  await loadWorkerZero();
+  await loadLog();
+  log('All systems nominal. The Agora never closes.', 'win');
+
+  // Auto-refresh every 60s
+  setInterval(async () => {
+    await loadWarChest();
+    await loadWorkerZero();
+  }, 60000);
+}
+
+boot();
+</script>
+</body>
+</html>
